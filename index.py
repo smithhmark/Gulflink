@@ -2,7 +2,7 @@
 # build an index of documents to be downloaded from the Gulflink site
 import scrapelib
 from lxml import etree
-import urllib.parse as urls
+from urllib.parse import urljoin
 
 def index_all():
     pass
@@ -41,10 +41,12 @@ def _get_releases(ag_url, scraper):
     ret_val = []
     for release in rel_links:
         href = release.attrib['href']
-        link = urls.urljoin(ag_url, href)
+        bits = href.split('/')
+        date_num = int(bits[-2])
+        link = urljoin(ag_url, href)
         text = release.text
-        text = text.split(':')[1].strip()
-        ret_val.append((text, link))
+        date_text = text.split(':')[1].strip()
+        ret_val.append((date_text, date_num, link))
     return ret_val
 
 def test_get_releases():
@@ -52,13 +54,31 @@ def test_get_releases():
     test_url = "http://www.gulflink.osd.mil/declassdocs/dia/"
     return  _get_releases(test_url, scraper)
 
+def _process_release(rurl, scraper):
+    tmpfile, resp = scraper.urlretrieve(rurl)
+    root = _parse_etree(tmpfile)
+    doc_xpath = '//p[class="main"]'
+    doc_paras = root.xpath(doc_xpath)
+    ret_val = []
+    for doc in doc_paras:
+        title = doc.text.strip()
+        href = doc[1].attrib['href']
+        bits = href.split('/')
+        link = urljoin("http://www.gulflink.osd.mil/", href)
+        ret_val.append((title, link))
+    return ret_val
+
 def _inventory_agency(agency_data, scraper):
     long_name, path = agency_data
-    ag_url = urls.urljoin("http://www.gulflink.osd.mil/", path)
+    ag_url = urljoin("http://www.gulflink.osd.mil/", path)
     #print(long_name, ag_url)
     inv = []
 
-    dnp = _get_releases(ag_url, scraper)
+    ag_rels = _get_releases(ag_url, scraper)
+    docs = []
+    for date_str, date_int, rel_url in ag_rels:
+        rel_docs = _process_release(rel_url, scraper)
+        docs.extend(rel_docs)
     return inv
 
 def index_declass(scraper=None):
