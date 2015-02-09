@@ -82,6 +82,30 @@ def _inventory_release_documents(rurl, scraper, date, agency):
                 "date":date, "agency":agency})
     return ret_val
 
+def _cat_doc(etrees):
+    root = etree.Element("html")
+    body = root.SubElement("body")
+    for et in etrees:
+        body.append(et.xpath('/html/body/pre'))
+
+    return root
+
+def process_document(url, scraper):
+    tmpfile, resp = scraper.urlretrieve(url)
+    match = re.search("Total Pages: *(\d+)", resp.content)
+    pg_cnt = int(match.group(1))
+    etrees = []
+    while pg_cnt > 0:
+        etrees.append(_parse_etree(tmpfile))
+        pg_cnt -= 1
+        a_s = etrees[-1].xpath('/html/body/p[1]/font/a')
+        for aa in a_s:
+            if aa.text == "Next":
+                url = urljoin("http://www.gulflink.osd.mil/", aa.attrib['href'])
+    page = _cat_doc(etrees)
+    return page
+
+    
 def _inventory_agency(agency_data, scraper):
     long_name, path = agency_data
     ag_url = urljoin("http://www.gulflink.osd.mil/", path)
