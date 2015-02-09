@@ -120,7 +120,7 @@ def _inventory_agency(agency_data, scraper):
         docs.extend(rel_docs)
     return inv
 
-def index_declass(scraper=None):
+def inventory_declass(scraper=None):
     if scraper is None:
         scraper = scrapelib.Scraper()
 
@@ -129,3 +129,4 @@ def index_declass(scraper=None):
     inventory = []
     for agency in agency_data:
         inventory.extend(_inventory_agency(agency, scraper))
+    return inventory
