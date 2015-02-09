@@ -54,30 +54,43 @@ def test_get_releases():
     test_url = "http://www.gulflink.osd.mil/declassdocs/dia/"
     return  _get_releases(test_url, scraper)
 
-def _process_release(rurl, scraper):
+def test_inventory_release_documents():
+    scraper = scrapelib.Scraper()
+    rel_url = 'http://www.gulflink.osd.mil/declassdocs/dia/19971030/'
+    rel_docs = _inventory_release_documents(rel_url, scraper, "date", "dia")
+    return rel_docs
+
+def _inventory_release_documents(rurl, scraper, date, agency):
+    ## returns a list of {title:t, link:l} tuples
     tmpfile, resp = scraper.urlretrieve(rurl)
+    #print(resp.code)
     root = _parse_etree(tmpfile)
-    doc_xpath = '//p[class="main"]'
+    doc_xpath = '//tr/td/p'
     doc_paras = root.xpath(doc_xpath)
+    #print(doc_paras)
     ret_val = []
     for doc in doc_paras:
         title = doc.text.strip()
-        href = doc[1].attrib['href']
-        bits = href.split('/')
-        link = urljoin("http://www.gulflink.osd.mil/", href)
-        ret_val.append((title, link))
+        title = "".join(title.split('\n'))
+        links = doc.xpath('./a')
+        if len(links) == 1:
+            href = links[0].attrib['href']
+            link = urljoin("http://www.gulflink.osd.mil/", href)
+            ret_val.append({"title": title, "link": link,
+                "date":date, "agency":agency})
     return ret_val
 
 def _inventory_agency(agency_data, scraper):
     long_name, path = agency_data
     ag_url = urljoin("http://www.gulflink.osd.mil/", path)
-    #print(long_name, ag_url)
+    short_ag = path.split('/')[-2]
+    # print(long_name, ag_url, short_ag)
     inv = []
-
     ag_rels = _get_releases(ag_url, scraper)
     docs = []
     for date_str, date_int, rel_url in ag_rels:
-        rel_docs = _process_release(rel_url, scraper)
+        rel_docs = _inventory_release_documents(rel_url, 
+                scraper, (date_int, date_str), short_ag)
         docs.extend(rel_docs)
     return inv
 
