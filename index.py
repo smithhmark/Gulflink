@@ -72,6 +72,8 @@ def _inventory_release_documents(rurl, scraper, date, agency):
     for doc in doc_paras:
         title = doc.text.strip()
         title = "".join(title.split('\n'))
+        title = "".join(title.split('\t'))
+        title = " ".join([bit.strip() for bit in title.split()])
         links = doc.xpath('./a')
         if len(links) == 1:
             href = links[0].attrib['href']
