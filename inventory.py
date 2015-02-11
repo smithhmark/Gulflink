@@ -51,7 +51,8 @@ def test_get_releases():
 def test_inventory_release_documents():
     scraper = scrapelib.Scraper()
     rel_url = 'http://www.gulflink.osd.mil/declassdocs/dia/19971030/'
-    rel_docs = _inventory_release_documents(rel_url, scraper, "date", "dia")
+    rel_docs = _inventory_release_documents(rel_url, scraper, 
+            "dummydate", "dia")
     return rel_docs
 
 def _inventory_release_documents(rurl, scraper, date, agency):
