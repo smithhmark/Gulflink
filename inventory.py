@@ -60,6 +60,13 @@ def _mine_doc_url(durl):
     agency = bits[2]
     reldate = bits[3]
 
+def _clean_title(old_title):
+    title = old_title.strip()
+    title = "".join(title.split('\n'))
+    title = "".join(title.split('\t'))
+    title = " ".join([bit.strip() for bit in title.split()])
+    return title
+
 def _inventory_release_documents(rurl, scraper):
     ## returns a list of {title:t, link:l} tuples
     tmpfile, resp = scraper.urlretrieve(rurl)
@@ -70,12 +77,9 @@ def _inventory_release_documents(rurl, scraper):
     #print(doc_paras)
     ret_val = []
     for doc in doc_paras:
-        title = doc.text.strip()
-        title = "".join(title.split('\n'))
-        title = "".join(title.split('\t'))
-        title = " ".join([bit.strip() for bit in title.split()])
         links = doc.xpath('./a')
         if len(links) == 1:
+            title = _clean_title(doc.text)
             href = links[0].attrib['href']
             link = urljoin("http://www.gulflink.osd.mil/", href)
             agency, rel_date = _mine_doc_url(link)
