@@ -35,9 +35,9 @@ def retrieve_document_etree(url, scraper=None):
     page = _concat_trees(etrees)
     return page
 
-def default_handler(doc_tree):
+def default_handler(doc_etree, inventory_record):
     # prints the document to stdout
-    print(etree.tostring(doc_tree))
+    print(etree.tostring(doc_etree))
 
 def retrieve(inv, download_handler=default_handler, limit=None, scraper=None):
     if scraper is None:
@@ -45,6 +45,6 @@ def retrieve(inv, download_handler=default_handler, limit=None, scraper=None):
     if limit is None:
         for doc in inv:
             et = retrieve_document_etree(doc['link'], scraper)
-            download_handler(et)
+            download_handler(et, doc)
     else:
         pass
