@@ -82,11 +82,11 @@ def _inventory_release_documents(rurl, scraper, date, agency):
                 "date":date, "agency":agency})
     return ret_val
 
-def _cat_doc(etrees):
+def _concat_trees(etrees):
     root = etree.Element("html")
     body = root.SubElement("body")
     for et in etrees:
-        body.append(et.xpath('/html/body/pre'))
+        body.append(et.xpath('/html/body/pre')[0])
 
     return root
 
@@ -102,7 +102,7 @@ def process_document(url, scraper):
         for aa in a_s:
             if aa.text == "Next":
                 url = urljoin("http://www.gulflink.osd.mil/", aa.attrib['href'])
-    page = _cat_doc(etrees)
+    page = _concat_trees(etrees)
     return page
 
     
