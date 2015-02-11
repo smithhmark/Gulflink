@@ -12,18 +12,12 @@ def _find_decalss_sources(root):
     pages = root.xpath(dept_page_link_xpath)
     return pages
 
-def _parse_etree(file_obj, html_parser=None):
-    if html_parser is None:
-        html_parser = etree.HTMLParser()
-    root = etree.parse(file_obj, html_parser)
-    return root
-
 def _get_agency_paths(scraper):
     top_browse_url = "http://www.gulflink.osd.mil/search/browse.html"
     tmpfile, resp = scraper.urlretrieve(top_browse_url)
     #print(resp.headers)
     #print(len(resp.content))
-    root = _parse_etree(tmpfile)
+    root = util.parse_etree(tmpfile)
     #print(root)
     pages = _find_decalss_sources(root)
     agency_data = []
@@ -35,7 +29,7 @@ def _get_agency_paths(scraper):
 
 def _get_releases(ag_url, scraper):
     tmpfile, resp = scraper.urlretrieve(ag_url)
-    root = _parse_etree(tmpfile)
+    root = util.parse_etree(tmpfile)
     rel_xpath = "/html/body/table/tr/td[2]/ul/li/a"
     rel_links = root.xpath(rel_xpath)
     ret_val = []
@@ -64,7 +58,7 @@ def _inventory_release_documents(rurl, scraper, date, agency):
     ## returns a list of {title:t, link:l} tuples
     tmpfile, resp = scraper.urlretrieve(rurl)
     #print(resp.code)
-    root = _parse_etree(tmpfile)
+    root = util.parse_etree(tmpfile)
     doc_xpath = '//tr/td/p'
     doc_paras = root.xpath(doc_xpath)
     #print(doc_paras)
@@ -82,30 +76,6 @@ def _inventory_release_documents(rurl, scraper, date, agency):
                 "date":date, "agency":agency})
     return ret_val
 
-def _concat_trees(etrees):
-    root = etree.Element("html")
-    body = root.SubElement("body")
-    for et in etrees:
-        body.append(et.xpath('/html/body/pre')[0])
-
-    return root
-
-def process_document(url, scraper):
-    tmpfile, resp = scraper.urlretrieve(url)
-    match = re.search("Total Pages: *(\d+)", resp.content)
-    pg_cnt = int(match.group(1))
-    etrees = []
-    while pg_cnt > 0:
-        etrees.append(_parse_etree(tmpfile))
-        pg_cnt -= 1
-        a_s = etrees[-1].xpath('/html/body/p[1]/font/a')
-        for aa in a_s:
-            if aa.text == "Next":
-                url = urljoin("http://www.gulflink.osd.mil/", aa.attrib['href'])
-    page = _concat_trees(etrees)
-    return page
-
-    
 def _inventory_agency(agency_data, scraper):
     long_name, path = agency_data
     ag_url = urljoin("http://www.gulflink.osd.mil/", path)
@@ -123,10 +93,8 @@ def _inventory_agency(agency_data, scraper):
 def inventory_declass(scraper=None):
     if scraper is None:
         scraper = scrapelib.Scraper()
-
-    agency_data = _get_agency_paths(scraper)
-
     inventory = []
+    agency_data = _get_agency_paths(scraper)
     for agency in agency_data:
         inventory.extend(_inventory_agency(agency, scraper))
     return inventory
