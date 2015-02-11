@@ -55,7 +55,12 @@ def test_inventory_release_documents():
             "dummydate", "dia")
     return rel_docs
 
-def _inventory_release_documents(rurl, scraper, date, agency):
+def _mine_doc_url(durl):
+    bits = durl.split('/')
+    agency = bits[2]
+    reldate = bits[3]
+
+def _inventory_release_documents(rurl, scraper):
     ## returns a list of {title:t, link:l} tuples
     tmpfile, resp = scraper.urlretrieve(rurl)
     #print(resp.code)
@@ -73,21 +78,21 @@ def _inventory_release_documents(rurl, scraper, date, agency):
         if len(links) == 1:
             href = links[0].attrib['href']
             link = urljoin("http://www.gulflink.osd.mil/", href)
+            agency, rel_date = _mine_doc_url(link)
             ret_val.append({"title": title, "link": link,
-                "date":date, "agency":agency})
+                "date":rel_date, "agency":agency})
     return ret_val
 
 def _inventory_agency(agency_data, scraper):
     long_name, path = agency_data
     ag_url = urljoin("http://www.gulflink.osd.mil/", path)
-    short_ag = path.split('/')[-2]
+    #short_ag = path.split('/')[-2]
     # print(long_name, ag_url, short_ag)
     inv = []
-    ag_rels = _get_releases(ag_url, scraper)
+    releases = _get_releases(ag_url, scraper)
     docs = []
-    for date_str, date_int, rel_url in ag_rels:
-        rel_docs = _inventory_release_documents(rel_url, 
-                scraper, (date_int, date_str), short_ag)
+    for date_str, date_int, rel_url in releases:
+        rel_docs = _inventory_release_documents(rel_url, scraper)
         docs.extend(rel_docs)
     return inv
 
