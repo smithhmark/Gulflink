@@ -35,6 +35,16 @@ def retrieve_document_etree(url, scraper=None):
     page = _concat_trees(etrees)
     return page
 
+def fs_handler_factory(directory):
+    snum = 0
+    def fs_handler(doc_etree, inventory_record):
+        nm = "{0}_{1}".format(inventory_record['agency'], snum)
+        snum += 1
+        opath = os.path.join(directory, nm)
+        fil = open(opath)
+        fil.write(etree.tostring(doc_etree))
+    return fs_handler
+
 def default_handler(doc_etree, inventory_record):
     # prints the document to stdout
     print(etree.tostring(doc_etree))
