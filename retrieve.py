@@ -40,6 +40,8 @@ def default_handler(doc_etree, inventory_record):
     print(etree.tostring(doc_etree))
 
 def retrieve(inv, download_handler=default_handler, limit=None, scraper=None):
+    # fetch the documents in the inventory <inv>. 
+    # <limit> is a bone-headed substring to limit the documents retrieved
     if scraper is None:
         scraper = scrapelib.Scraper()
     if limit is None:
@@ -47,4 +49,7 @@ def retrieve(inv, download_handler=default_handler, limit=None, scraper=None):
             et = retrieve_document_etree(doc['link'], scraper)
             download_handler(et, doc)
     else:
-        pass
+        for doc in inv:
+            if limit in doc['title']:
+                et = retrieve_document_etree(doc['link'], scraper)
+                download_handler(et, doc)
