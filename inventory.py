@@ -1,8 +1,10 @@
 # index.py
 # build an index of documents to be downloaded from the Gulflink site
-import scrapelib
 from lxml import etree
 from urllib.parse import urljoin
+import pickle
+
+import scrapelib
 
 def index_all():
     pass
