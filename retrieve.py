@@ -47,7 +47,10 @@ def fs_handler_factory(directory):
 
 def default_handler(doc_etree, inventory_record):
     # prints the document to stdout
-    print(etree.tostring(doc_etree))
+    print(inventory_record['link'])
+    print(inventory_record['title'])
+    print(inventory_record['date'])
+    print(etree.tostring(doc_etree), '\n')
 
 def retrieve(inv, download_handler=default_handler, limit=None, scraper=None):
     # fetch the documents in the inventory <inv>. 
