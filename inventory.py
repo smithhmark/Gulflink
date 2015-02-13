@@ -87,14 +87,16 @@ def _inventory_release_documents(rurl, scraper):
     ret_val = []
     for doc in doc_paras:
         links = doc.xpath('./a')
-        ### need to search through found links for the link with "ascii text"
-        if len(links) == 1:
-            title = _clean_title(doc.text)
-            href = links[0].attrib['href']
-            link = urljoin("http://www.gulflink.osd.mil/", href)
-            agency, rel_date = _mine_doc_url(link)
-            ret_val.append({"title": title, "link": link,
-                "date":rel_date, "agency":agency})
+        if len(links) >= 1:
+            # ignore non-ascii text links
+            for link in links:
+                if link.text and link.text.lower().find("ascii") >= 0:
+                    title = _clean_title(doc.text)
+                    href = link.attrib['href']
+                    linkdest = urljoin("http://www.gulflink.osd.mil/", href)
+                    agency, rel_date = _mine_doc_url(linkdest)
+                    ret_val.append({"title": title, "link": linkdest,
+                        "date":rel_date, "agency":agency})
     return ret_val
 
 def _inventory_agency(agency_data, scraper):
