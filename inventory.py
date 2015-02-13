@@ -3,8 +3,11 @@
 from lxml import etree
 from urllib.parse import urljoin
 import pickle
+import sys
 
 import scrapelib
+
+import util
 
 def index_all():
     pass
@@ -61,6 +64,7 @@ def _mine_doc_url(durl):
     bits = durl.split('/')
     agency = bits[2]
     reldate = bits[3]
+    return agency, reldate
 
 def _clean_title(old_title):
     title = old_title.strip()
@@ -73,6 +77,9 @@ def _inventory_release_documents(rurl, scraper):
     ## returns a list of {title:t, link:l} tuples
     tmpfile, resp = scraper.urlretrieve(rurl)
     #print(resp.code)
+    if resp.code < 200 or resp.code >= 300:
+        print('[-] release url failed:', rurl)
+        return []
     root = util.parse_etree(tmpfile)
     doc_xpath = '//tr/td/p'
     doc_paras = root.xpath(doc_xpath)
@@ -80,6 +87,7 @@ def _inventory_release_documents(rurl, scraper):
     ret_val = []
     for doc in doc_paras:
         links = doc.xpath('./a')
+        ### need to search through found links for the link with "ascii text"
         if len(links) == 1:
             title = _clean_title(doc.text)
             href = links[0].attrib['href']
@@ -91,15 +99,20 @@ def _inventory_release_documents(rurl, scraper):
 
 def _inventory_agency(agency_data, scraper):
     long_name, path = agency_data
+    print("[+] tackling:", long_name)
     ag_url = urljoin("http://www.gulflink.osd.mil/", path)
     #short_ag = path.split('/')[-2]
     # print(long_name, ag_url, short_ag)
     inv = []
     releases = _get_releases(ag_url, scraper)
-    docs = []
+    if len(releases) ==0:
+        print('[-] failed to find a release')
+        return inv
     for date_str, date_int, rel_url in releases:
+        print("[+]   beginning release:", date_str)
         rel_docs = _inventory_release_documents(rel_url, scraper)
-        docs.extend(rel_docs)
+        print("[+]   found ", len(rel_docs), " released docs")
+        inv.extend(rel_docs)
     return inv
 
 def inventory_declass(scraper=None):
@@ -114,12 +127,12 @@ def inventory_declass(scraper=None):
 
 def main():
     #config based on example at:github/olberger/scrapelib/docs/example/
-    scraper = scrapelib.Scraper(requests_per_minute=60, accept_cookies=True,
-            follow_robots=True, cache_obj=filecache, cache_write_only=False, 
-            config={'verbose':sys.stderr}, raise_errors=False,
-              follow_redirects=False)
-    ofil = open("inventory.pickle", r'w')
+    #        follow_robots=True, cache_obj=filecache, cache_write_only=False, 
+    #        config={'verbose':sys.stderr}, raise_errors=False,
+    scraper = scrapelib.Scraper(requests_per_minute=60, raise_errors=False)
+    ofil = open("inventory.pickle", r'wb')
     inv = inventory_declass(scraper)
+    print("[+] found ", len(inv), " total docs")
     pickle.dump(inv, ofil)
 
 if __name__ == '__main__':
