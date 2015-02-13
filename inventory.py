@@ -108,3 +108,17 @@ def inventory_declass(scraper=None):
     for agency in agency_data:
         inventory.extend(_inventory_agency(agency, scraper))
     return inventory
+
+
+def main():
+    #config based on example at:github/olberger/scrapelib/docs/example/
+    scraper = scrapelib.Scraper(requests_per_minute=60, accept_cookies=True,
+            follow_robots=True, cache_obj=filecache, cache_write_only=False, 
+            config={'verbose':sys.stderr}, raise_errors=False,
+              follow_redirects=False)
+    ofil = open("inventory.pickle", r'w')
+    inv = inventory_declass(scraper)
+    pickle.dump(inv, ofil)
+
+if __name__ == '__main__':
+    main()
