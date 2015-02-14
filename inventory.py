@@ -35,10 +35,15 @@ def _get_agency_paths(scraper):
 def _get_releases(ag_url, scraper):
     tmpfile, resp = scraper.urlretrieve(ag_url)
     root = util.parse_etree(tmpfile)
-    rel_xpath = "/html/body/table/tr/td[2]/ul/li/a"
+    rel_links = []
+    rel_xpath = "//ul/li/a"
     rel_links = root.xpath(rel_xpath)
+    rel_links2 = []
+    for ll in rel_links:
+        if ll.text and ll.text.startswith("Documents released:"):
+            rel_links2.append(ll)
     ret_val = []
-    for release in rel_links:
+    for release in rel_links2:
         href = release.attrib['href']
         bits = href.split('/')
         date_num = int(bits[-2])
