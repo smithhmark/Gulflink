@@ -67,8 +67,8 @@ def test_inventory_release_documents():
 
 def _mine_doc_url(durl):
     bits = durl.split('/')
-    agency = bits[2]
-    reldate = bits[3]
+    agency = bits[4]
+    reldate = bits[5]
     return agency, reldate
 
 def _clean_title(old_title):
@@ -78,14 +78,7 @@ def _clean_title(old_title):
     title = " ".join([bit.strip() for bit in title.split()])
     return title
 
-def _inventory_release_documents(rurl, scraper):
-    ## returns a list of {title:t, link:l} tuples
-    tmpfile, resp = scraper.urlretrieve(rurl)
-    #print(resp.code)
-    if resp.code < 200 or resp.code >= 300:
-        print('[-] release url failed:', rurl)
-        return []
-    root = util.parse_etree(tmpfile)
+def _rip_docs_from_paragraphs(root):
     doc_xpath = '//tr/td/p'
     doc_paras = root.xpath(doc_xpath)
     #print(doc_paras)
@@ -99,9 +92,57 @@ def _inventory_release_documents(rurl, scraper):
                     title = _clean_title(doc.text)
                     href = link.attrib['href']
                     linkdest = urljoin("http://www.gulflink.osd.mil/", href)
-                    agency, rel_date = _mine_doc_url(linkdest)
-                    ret_val.append({"title": title, "link": linkdest,
-                        "date":rel_date, "agency":agency})
+                    try:
+                        agency, rel_date = _mine_doc_url(linkdest)
+                        ret_val.append({"title": title, "link": linkdest,
+                            "date":rel_date, "agency":agency})
+                    except IndexError:
+                        print("[-]   error processing link:", linkdest)
+    return ret_val
+
+def _rip_docs_from_list(root):
+    para_xpath = '/html/body/table/tr[1]/td[2]/table[2]/tr[2]//p'
+    #print(doc_paras)
+    ret_val = []
+    titles = []
+    paras = root.xpath(para_xpath)
+    for para in paras:
+        if para.text:
+            title = _clean_title(para.text)
+            if len(title) > 0:
+                titles.append(title)
+    links = []
+    link_xpath = '/html/body/table/tr[1]/td[2]/table[2]/tr[2]//a'
+    linkelts = root.xpath(link_xpath)
+    # ignore non-ascii text links
+    for linkelt in linkelts:
+        if linkelt.text and linkelt.text.lower().find("ascii") >= 0:
+            href = linkelt.attrib['href']
+            linkdest = urljoin("http://www.gulflink.osd.mil/", href)
+            links.append(linkdest)
+    for title, linkdest in zip(titles, links):
+        try:
+            agency, rel_date = _mine_doc_url(linkdest)
+            ret_val.append({"title": title, "link": linkdest,
+                "date":rel_date, "agency":agency})
+        except IndexError:
+            print("[-]   error processing link:", linkdest)
+    return ret_val
+
+
+def _inventory_release_documents(rurl, scraper):
+    ## returns a list of {title:t, link:l} tuples
+    tmpfile, resp = scraper.urlretrieve(rurl)
+    #print(resp.code)
+    if resp.code < 200 or resp.code >= 300:
+        print('[-] release url failed:', rurl)
+        return []
+    root = util.parse_etree(tmpfile)
+    doc_xpath = '//tr/td/p'
+    doc_paras = root.xpath(doc_xpath)
+    ret_val = _rip_docs_from_paragraphs(root)
+    if len(ret_val) == 0:
+        ret_val = _rip_docs_from_list(root)
     return ret_val
 
 def _inventory_agency(agency_data, scraper):
@@ -138,6 +179,8 @@ def main():
     #        config={'verbose':sys.stderr}, raise_errors=False,
     scraper = scrapelib.Scraper(requests_per_minute=60, raise_errors=False)
     ofil = open("inventory.pickle", r'wb')
+    #tmp = 'http://www.gulflink.osd.mil/declassdocs/bumed/19970404/'
+    #inv = _inventory_release_documents(tmp, scraper)
     inv = inventory_declass(scraper)
     print("[+] found ", len(inv), " total docs")
     pickle.dump(inv, ofil)
