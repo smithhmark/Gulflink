@@ -2,6 +2,8 @@
 #
 #
 
+import re
+
 DOF_TYPES = [
     'IIR',
     'CMAT',
@@ -21,7 +23,14 @@ SNIFFS = {
 def sniff_doctype(text):
     """Use the document text to determine the type of the document.
     """
-    pass
+    matched_types = []
+    for dtyp, tests in SNIFFS.items():
+        tmprexp = '|'.join(tests)
+        match = re.search(tmprexp, text) ### not at all clever...
+        if match:
+            matched_types.append(dtyp)
+    print("[+] matched on:", matched_types)
+    return matched_types
 
 def process_IIR(text):
     """extract the known fields from an IIR
